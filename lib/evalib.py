@@ -45,9 +45,3 @@ class EVADecisionEvaluator:
                 ] 
             )
         return min(R)
-
-evaluator = EVADecisionEvaluator([
-    EVADecision(1.0, -1.0), EVADecision(0.9, 0.0), EVADecision(0.4, 1.0)
-])
-
-print(evaluator.decision_forward_pass_2d())

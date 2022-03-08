@@ -1,10 +1,10 @@
-class EVADecision2D:
-    d: float 
-    f: float 
+class EVADecision:
+    d: float   # decision rationality 
+    l: float   # decision label (e.g 0, 1 or -1)
 
-    def __init__(self, d, f) -> None:
+    def __init__(self, d, l) -> None:
         self.d = d
-        self.f = f
+        self.l = l
 
 class EVADecisionEvaluator:
     decision_space: list
@@ -30,7 +30,7 @@ class EVADecisionEvaluator:
             R.append(
                 [
                     self.decision_space[i].d - self.decision_space[i-1].d,
-                    self.decision_space[i].f - self.decision_space[i-1].f
+                    self.decision_space[i].l
                 ] 
             )
         return min(R)
@@ -41,14 +41,7 @@ class EVADecisionEvaluator:
             R.append(
                 [
                     self.decision_space[i-1].d - self.decision_space[i].d,
-                    self.decision_space[i-1].f - self.decision_space[i].f
+                    self.decision_space[i].l
                 ] 
             )
         return min(R)
-
-evaluator = EVADecisionEvaluator([
-    EVADecision2D(9.0, 3.0), EVADecision2D(3.0, 1.0),
-    EVADecision2D(0.5, 1.0), EVADecision2D(4.0, 2.0)
-])
-
-print(evaluator.decision_forward_pass_2d())

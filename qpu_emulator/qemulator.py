@@ -16,7 +16,7 @@ class EQubit:
 class QEmulator:
 
 	@staticmethod
-	def x(state: np.array(list)) -> int:
+	def x(state: np.array(list)) -> np.array(list):
 		return np.fliplr([state])
 
 	@staticmethod

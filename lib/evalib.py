@@ -13,19 +13,19 @@ class EVADecisionEvaluator:
     def __init__(self, decision_space: list):
         self.decision_space = decision_space
 
-    def decision_forward_pass(self):
+    def decision_forward_pass(self) -> list :
         R = []
         for i in range(len(self.decision_space)):
             R.append(self.decision_space[i] - self.decision_space[i - 1])
         return min(R)
 
-    def decision_backward_pass(self):
+    def decision_backward_pass(self) -> list:
         R = []
         for i in range(len(self.decision_space)):
             R.append(self.decision_space[i - 1] - self.decision_space[i])
         return min(R)
 
-    def decision_forward_pass_2d(self):
+    def decision_forward_pass_2d(self) -> list:
         R = []
         for i in range(len(self.decision_space)):
             R.append(
@@ -36,7 +36,7 @@ class EVADecisionEvaluator:
             )
         return min(R)
 
-    def decision_backward_pass_2d(self):
+    def decision_backward_pass_2d(self) -> list:
         R = []
         for i in range(len(self.decision_space)):
             R.append(

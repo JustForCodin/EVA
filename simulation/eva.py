@@ -1,115 +1,74 @@
-import math
 import numpy as np
 import matplotlib.pyplot as plt
-from PIL import Image as im
-import random
 
-def tanh(x):
-    return np.tanh(x)
+class CPPN:
+    def __init__(self, num_input, num_output, num_hidden_layers=3, 
+                 num_hidden_units=32, activation_functions=[np.sin, np.tanh]):
+        self.num_input = num_input
+        self.num_output = num_output
+        self.num_hidden_layers = num_hidden_layers
+        self.num_hidden_units = num_hidden_units
+        self.activation_functions = activation_functions
 
-def cos(x): 
-    return np.cos(x)
+        # Initialize weights and biases
+        self.weights = []
+        self.biases = []
+        input_to_hidden = np.random.uniform(low=-1, high=1, size=(self.num_input, self.num_hidden_units))
+        self.weights.append(input_to_hidden)
+        self.biases.append(np.zeros(self.num_hidden_units))
+        
+        for _ in range(self.num_hidden_layers - 1):
+            hidden_to_hidden = np.random.uniform(low=-1, high=1, size=(self.num_hidden_units, self.num_hidden_units))
+            self.weights.append(hidden_to_hidden)
+            self.biases.append(np.zeros(self.num_hidden_units))
+        
+        hidden_to_output = np.random.uniform(low=-1, high=1, size=(self.num_hidden_units, self.num_output))
+        self.weights.append(hidden_to_output)
+        self.biases.append(np.zeros(self.num_output))
 
-def relu(x):
-    return x > 0 # 1 if true 0 otherwise
+    def activate(self, x):
+        for layer in range(len(self.weights)):
+            x = np.dot(x, self.weights[layer]) + self.biases[layer]
+            activation_func = self.activation_functions[layer % len(self.activation_functions)]
+            x = activation_func(x)
+        return x
 
-class Layer:
-    def __init__(self) -> None:
-        self.input = None
-        self.output = None
+    def compute_image(self, width, height):
+        x = np.linspace(-1, 1, width)
+        y = np.linspace(-1, 1, height)
+        xs, ys = np.meshgrid(x, y)
+        rs = np.sqrt(xs**2 + ys**2)
+        thetas = np.arctan2(ys, xs)
 
-    def forward_propagation(self):
-        NotImplementedError
+        inputs = []
+        for i in range(self.num_input):
+            if i % 4 == 0:
+                inputs.append(rs)
+            elif i % 4 == 1:
+                inputs.append(thetas)
+            elif i % 4 == 2:
+                inputs.append(np.sin(self.c[i] * rs + self.d[i] * thetas))
+            elif i % 4 == 3:
+                inputs.append(np.cos(self.c[i] * rs + self.d[i] * thetas))
 
-    def backward_propagation(self):
-        NotImplementedError
+        inputs = np.array(inputs).transpose()
 
-class FCLayer(Layer):
-    def __init__(self, input_size, output_size) -> None:
-        super().__init__()
-        self.weights = np.random.rand(input_size, output_size) - 0.5
-        self.bias = np.random.rand(1, output_size) - 0.5
+        # apply the hidden layers
+        hiddens = inputs
+        for i in range(self.num_hidden_layers):
+            hiddens = np.maximum(np.dot(hiddens, self.weights[i]) + self.biases[i], 0)
 
-    def forward_propagation(self, input_data):
-        self.input = input_data
-        self.output = np.dot(self.input, self.weights) + self.bias
-        return self.output
+        # apply the output layer
+        rgba = np.dot(hiddens, self.weights[-1]) + self.biases[-1]
+        rgba = np.clip(rgba, -1, 1)
+        rgba = (rgba + 1) / 2 # scale to 0-1 range
+        rgba = (rgba * 255).astype(int) # scale to 0-255 range
+        rgba = np.reshape(rgba, (height, width, 4))
 
-class RGBLayer(FCLayer):
-    def __init__(self, input_size, output_size, rgb_coeffs, rgb_offset) -> None:
-        super().__init__(input_size, output_size)
-        self.rgb_coeffs = rgb_coeffs
-        self.rgb_offset = rgb_offset
+        return rgba
 
-    def output_to_rgb(self):
-        for i in range(len(self.input_size)):
-            for j in range(3):  # RBB values
-                accumulator = 0
-                for k in range(len(self.output_size)):
-                    accumulator += self.input[i][k]*self.weights[j][k]
-                self.output.push(
-                    math.floor((math.sin(accumulator)/2+0.5)*self.rgb_coeffs[j]+self.rgb_offset[j]))
-            self.output.push(255) 
-
-class ActivationLayer(Layer):
-    def __init__(self, activation) -> None:
-        super().__init__()
-        self.activation = activation
-
-    def forward_propagation(self, input_data):
-        self.input = input_data
-        return self.activation(self.input)
-
-class Network:
-    def __init__(self) -> None:
-        self.layers = []
-
-    def add(self, layer: Layer):
-        self.layers.append(layer)
-
-    def predict(self, input_data):
-        samples = len(input_data)
-        result = []
-
-        for i in range(samples):
-            output = input_data[i]
-            for layer in self.layers:
-                output = layer.forward_propagation(output)
-                result.append(output)
-        return result
-
-x_train = [[0] * 480] * 480
-for i in range(len(x_train)):
-    for j in range(len(x_train)):
-        x_train[i][j] = random.randint(0, 255)
-
-x_train = np.array(x_train)
-
-nn = Network()
-nn.add(FCLayer(len(x_train), 20))
-for i in range(7):
-    nn.add(FCLayer(20, 20))
-    nn.add(ActivationLayer(tanh))
-    nn.add(FCLayer(20, 20))
-    nn.add(ActivationLayer(cos))
-nn.add(FCLayer(20, 3))
-nn.add(ActivationLayer(tanh))
-out = nn.predict(x_train)
-
-out_to_rgb = []
-
-for i in range(len(out)):
-    for j in range(len(out[i])):
-        for k in range(len(out[j])):
-            out_to_rgb.append(out[i][j][k] )
-
-rgb_data = np.arange(0, len(out_to_rgb), 1, np.uint0)
-rgb_data = np.resize(rgb_data, (480, 480))
-print(rgb_data.shape)
-print(rgb_data)
-
-# final_img = im.fromarray(rgb_data)
-# final_img.save('img.png')
-
-plt.imshow(rgb_data)
+# Example usage
+cppn = CPPN(num_input=2, num_output=4, num_hidden_layers=8, num_hidden_units=16, activation_functions=[np.cos, np.sin, np.square, np.sin, np.tanh])
+image = cppn.compute_image(width=480, height=480)
+plt.imshow(image)
 plt.show()
